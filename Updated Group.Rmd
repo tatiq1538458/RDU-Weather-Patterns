@@ -1,0 +1,173 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#Install
+```{r}
+#install.packages("tidyverse")
+```
+
+#Libraries
+```{r}
+library(tidyverse)
+library(psych)
+library(readr)
+library(ggplot2)
+library(purrr)
+library(scales)
+library(dplyr)
+```
+
+#Read File
+```{r}
+dataRDU<- read_delim("rdu-weather-history.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+head(dataRDU)
+```
+
+#Summarize Data
+```{r}
+summary(dataRDU)
+```
+
+#Hypothesis #1
+```{r}
+dataRDU$date <- as.Date(dataRDU$date)
+
+dataRDU$year <- as.numeric(format(dataRDU$date, "%Y"))
+
+
+average_temperatures <- dataRDU %>%
+
+  group_by(year) %>%
+
+  summarize(avg_tmin = mean(tmin, na.rm = TRUE),
+
+            avg_tmax = mean(tmax, na.rm = TRUE))
+
+#Line Plot Comparison 
+
+ggplot(average_temperatures, aes(x = year)) +
+
+  geom_line(aes(y = avg_tmin), color = "blue") +
+
+  geom_line(aes(y = avg_tmax), color = "red") +
+
+  xlab("Year") +
+
+  ylab("Average Temperature (F)") +
+
+  ggtitle("Trend in Average Daily Temperatures Over the Years")
+```
+
+#Hypothesis #2 
+```{r}
+dataRDU <- dataRDU %>%
+  mutate(next_day_tmin = lag(tmin))
+
+
+ggplot(dataRDU, aes(x = prcp, y = next_day_tmin)) +
+  geom_point() +
+  xlab("Precipitation (Millimeters)") +
+  ylab("Next Day's Minimum Temperature (Degrees)") +
+  ggtitle("Hypothesis #2") +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") 
+```
+#Hypothesis #3
+```{r}
+dataRDU$date <- as.Date(dataRDU$date)
+
+dataRDU$month <- as.integer(format(dataRDU$date, "%m"))
+
+average_wind_speed <- dataRDU %>%
+  group_by(month) %>%
+  summarize(avg_awnd = mean(awnd, na.rm = TRUE))
+
+#Plot
+
+ggplot(average_wind_speed, aes(x = month, y = avg_awnd)) +
+
+  geom_line() +
+
+  xlab("Month") +
+
+  ylab("Average Wind Speed (Knots)") +
+
+  ggtitle("Seasonal Variations in Wind Speed") +
+
+  scale_x_continuous(breaks = 1:12, labels = month.abb)
+```
+
+
+#Hypothesis #4
+```{r}
+event_subset <- dataRDU %>%
+
+  filter(prcp == 1)  
+
+
+no_event_subset <- dataRDU %>%
+
+  filter(prcp == 0) 
+
+#T-Test
+t_test_result <- t.test(event_subset$awnd, no_event_subset$awnd, var.equal = FALSE)
+
+t.test(event_subset$awnd, no_event_subset$awnd)
+
+cat(t_test_result$t.statistic)
+
+cat("p-value:", t_test_result$p.value, "\n")
+
+cat("t-statistic:", t_test_result$statistic, "\n")
+
+```
+
+
+```{r}
+maxTempWind <- select(dataRDU, c("awnd", "tmax"))
+pairs(maxTempWind)
+```
+
+```{r}
+ggplot(data = dataRDU, mapping = aes(x = awnd, 
+                                  y = tmax))+
+  geom_point()
+```
+
+```{r}
+ggplot(data = dataRDU, mapping = aes(x = awnd, 
+                                  y = tmax))+
+  geom_line()
+```
+
+```{r}
+ggplot(data = dataRDU, mapping = aes(x = awnd, 
+                                  y = tmax))+
+  geom_line()+
+  labs(title = "Effect of Temperature(Degrees) on Wind Speed(Knots)",
+       subtitle = "Source: fedesoriano. (April 2022). Wind Speed Prediction Dataset.",
+       x= "Wind Speed in Knots",
+       y= "Maximum Temperature in Degrees Degrees")
+```
+
+
+```{r}
+ggplot(data = dataRDU, mapping = aes(x = awnd,
+                                  y = tmax))+
+  geom_smooth()+
+  labs(title = "Effect of Temperature(F) on Wind Speed(Kt)",
+       
+       x= "Wind Speed in Knots",
+       y= "Maximum Temperature in Degrees ")
+```
+
+```{r}
+avgTempMax<- mean(dataRDU$tmax)
+avgTempMax
+```
+```{r}
+avgTempMin <- mean(dataRDU$tmin)
+avgTempMin
+```
+
+
